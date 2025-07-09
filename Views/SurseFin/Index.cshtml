@@ -1,0 +1,216 @@
+@model IEnumerable<BudgetManagement.Models.SurseFin>
+@{
+    ViewData["Title"] = "Surse Finantare";
+}
+
+<h1>Surse Finantare</h1>
+
+<p>
+    <button class="btn btn-primary" id="btnCreate">Adauga Sursa Finantare</button>
+</p>
+
+<table class="table table-striped" id="dataTable">
+    <thead>
+        <tr>
+            <th>An</th>
+            <th>Cod</th>
+            <th>Denumire</th>
+            <th>Cod Afisare</th>
+            <th>Tip Sursa</th>
+            <th>Tip Buget</th>
+            <th>Actiuni</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" id="modalForm" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Sursa Finantare</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form">
+                    <input type="hidden" id="srsFinId" />
+                    <div class="mb-3">
+                        <label for="an" class="form-label">An</label>
+                        <input type="number" class="form-control" id="an" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="cod" class="form-label">Cod</label>
+                        <input type="text" class="form-control" id="cod" maxlength="10" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="denumire" class="form-label">Denumire</label>
+                        <input type="text" class="form-control" id="denumire" maxlength="50" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="colectie" class="form-label">Colectie</label>
+                        <input type="number" class="form-control" id="colectie" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="codAfis" class="form-label">Cod Afisare</label>
+                        <input type="text" class="form-control" id="codAfis" maxlength="10" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipSrs" class="form-label">Tip Sursa</label>
+                        <select class="form-control" id="tipSrs">
+                            <option value="1">Capitol</option>
+                            <option value="2">Subcapitol</option>
+                            <option value="3" selected>Paragraf</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipBuget" class="form-label">Tip Buget</label>
+                        <select class="form-control" id="tipBuget">
+                            <option value="1" selected>Cheltuieli</option>
+                            <option value="2">Venituri</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ordine" class="form-label">Ordine</label>
+                        <input type="number" class="form-control" id="ordine" value="1" />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="blocat" />
+                        <label class="form-check-label" for="blocat">Blocat</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuleaza</button>
+                <button type="button" class="btn btn-primary" id="btnSave">Salveaza</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    var table = $('#dataTable').DataTable({
+        ajax: {
+            url: '/SurseFin/GetAll',
+            dataSrc: ''
+        },
+        columns: [
+            { data: 'an' },
+            { data: 'cod' },
+            { data: 'denumire' },
+            { data: 'codAfis' },
+            { 
+                data: 'tipSrs',
+                render: function(data) {
+                    switch(data) {
+                        case 1: return 'Capitol';
+                        case 2: return 'Subcapitol';
+                        case 3: return 'Paragraf';
+                        default: return data;
+                    }
+                }
+            },
+            { 
+                data: 'tipBuget',
+                render: function(data) {
+                    return data == 1 ? 'Cheltuieli' : 'Venituri';
+                }
+            },
+            {
+                data: null,
+                render: function(data, type, row) {
+                    return '<button class="btn btn-sm btn-primary btnEdit" data-id="' + row.srsFinId + '">Modifica</button> ' +
+                           '<button class="btn btn-sm btn-danger btnDelete" data-id="' + row.srsFinId + '">Sterge</button>';
+                }
+            }
+        ],
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/ro.json'
+        }
+    });
+
+    $('#btnCreate').click(function() {
+        $('#form')[0].reset();
+        $('#srsFinId').val('');
+        $('#modalTitle').text('Adauga Sursa Finantare');
+        $('#modalForm').modal('show');
+    });
+
+    $(document).on('click', '.btnEdit', function() {
+        var id = $(this).data('id');
+        $.get('/SurseFin/Get/' + id, function(data) {
+            $('#srsFinId').val(data.srsFinId);
+            $('#an').val(data.an);
+            $('#cod').val(data.cod);
+            $('#denumire').val(data.denumire);
+            $('#colectie').val(data.colectie);
+            $('#codAfis').val(data.codAfis);
+            $('#tipSrs').val(data.tipSrs);
+            $('#tipBuget').val(data.tipBuget);
+            $('#ordine').val(data.ordine);
+            $('#blocat').prop('checked', data.blocat == 1);
+            $('#modalTitle').text('Modifica Sursa Finantare');
+            $('#modalForm').modal('show');
+        });
+    });
+
+    $('#btnSave').click(function() {
+        if (!$('#form')[0].checkValidity()) {
+            $('#form')[0].reportValidity();
+            return;
+        }
+
+        var data = {
+            srsFinId: $('#srsFinId').val() || 0,
+            an: $('#an').val(),
+            cod: $('#cod').val(),
+            denumire: $('#denumire').val(),
+            colectie: $('#colectie').val(),
+            codAfis: $('#codAfis').val(),
+            tipSrs: $('#tipSrs').val(),
+            tipBuget: $('#tipBuget').val(),
+            ordine: $('#ordine').val(),
+            blocat: $('#blocat').is(':checked') ? 1 : 0
+        };
+
+        var url = data.srsFinId ? '/SurseFin/Update' : '/SurseFin/Create';
+        var method = data.srsFinId ? 'PUT' : 'POST';
+
+        $.ajax({
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                $('#modalForm').modal('hide');
+                table.ajax.reload();
+                toastr.success('Operatiune realizata cu succes!');
+            },
+            error: function() {
+                toastr.error('A aparut o eroare!');
+            }
+        });
+    });
+
+    $(document).on('click', '.btnDelete', function() {
+        if (!confirm('Sigur doriti sa stergeti aceasta inregistrare?')) return;
+        
+        var id = $(this).data('id');
+        $.ajax({
+            url: '/SurseFin/Delete/' + id,
+            method: 'DELETE',
+            success: function() {
+                table.ajax.reload();
+                toastr.success('Inregistrare stearsa cu succes!');
+            },
+            error: function() {
+                toastr.error('A aparut o eroare la stergere!');
+            }
+        });
+    });
+});
+</script>
+}
